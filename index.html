@@ -3,42 +3,46 @@
   <head>
     <meta charset="UTF-8">
     <title>Onboarding mit A-Frame für HoloLens 2</title>
-    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-    <!-- Optional: Komponenten für erweiterte Interaktionen -->
-    <script src="https://unpkg.com/aframe-event-set-component@5.0.0/dist/aframe-event-set-component.min.js"></script>
-    <script src="https://unpkg.com/aframe-layout-component@5.0.0/dist/aframe-layout-component.min.js"></script>
+    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+    <!-- Zusätzliche Komponenten für Hand-Tracking -->
+    <script src="https://unpkg.com/aframe-hands@3.0.1/dist/aframe-hands.min.js"></script>
+    <script src="https://unpkg.com/aframe-super-hands-component@4.0.0/dist/aframe-super-hands-component.min.js"></script>
   </head>
   <body>
     <a-scene>
       <!-- Onboarding Manager Komponente -->
-      <a-entity id="onboarding" onboarding-manager="jsonUrl: https://example.com/onboarding.json; baseImageUrl: https://github.com/yourrepo/images"></a-entity>
+      <a-entity id="onboarding" onboarding-manager="jsonUrl: https://raw.githubusercontent.com/acaTUDa/Morpheus/refs/heads/main/data/dd3R.json; baseImageUrl: https://raw.githubusercontent.com/acaTUDa/Morpheus/refs/heads/main/media"></a-entity>
       
       <!-- UI Elemente mit angepassten Positionen und Farben -->
       <a-entity id="ui" position="0 1.6 -3">
-        <a-text id="cardNumber" position="-1.2 1.6 -0.5" color="#000000" value=""></a-text>
-        <a-text id="title" position="-1.2 1.4 -0.5" color="#000000" value="" width="4"></a-text>
-        <a-text id="description" position="-1.2 1.1 -0.5" color="#000000" value="" width="4"></a-text>
-        <a-text id="warning" position="-1.2 0.9 -0.5" color="#FF0000" value="" visible="false" width="4"></a-text>
-        <a-image id="mediaImage" position="0 0.6 -0.5" width="2" height="2" visible="false"></a-image>
+        <a-text id="cardNumber" position="-2 1.75017 -0.5" color="#000000" value=""></a-text>
+        <a-text id="title" position="-2 1.4 -0.5" color="#000000" value="" width="4"></a-text>
+        <a-text id="description" position="-2 0.8708 -0.5" color="#000000" value="" width="4"></a-text>
+        <a-text id="warning" position="-2 0.09217 -0.5" color="#FF0000" value="" visible="false" width="4"></a-text>
+        <a-image id="mediaImage" position="3.5253 1.00517 -0.5" width="2" height="2" visible="false"></a-image>
         
         <!-- Buttons mit angepassten Positionen und Farben -->
-        <a-plane id="buttonPrev" position="-1.6 -0.6 -0.5" width="0.5" height="0.2" color="#555" class="clickable">
+        <a-plane id="buttonPrev" position="-1.6 -0.6 -0.5" width="0.5" height="0.2" color="#555" class="clickable button">
           <a-text value="Zurück" align="center" position="0 0 0.1" color="#000000"></a-text>
         </a-plane>
-        <a-plane id="buttonNext" position="0 -0.6 -0.5" width="0.5" height="0.2" color="#555" class="clickable">
+        <a-plane id="buttonNext" position="0 -0.6 -0.5" width="0.5" height="0.2" color="#555" class="clickable button">
           <a-text value="Weiter" align="center" position="0 0 0.1" color="#000000"></a-text>
         </a-plane>
-        <a-plane id="buttonClose" position="1.6 -0.6 -0.5" width="0.5" height="0.2" color="#555" class="clickable">
+        <a-plane id="buttonClose" position="1.6 -0.6 -0.5" width="0.5" height="0.2" color="#555" class="clickable button">
           <a-text value="Schließen" align="center" position="0 0 0.1" color="#000000"></a-text>
         </a-plane>
       </a-entity>
       
-      <!-- Kamera und Cursor für HoloLens 2 Interaktionen -->
+      <!-- Hand-Tracking Komponenten für HoloLens 2 -->
+      <a-entity hands></a-entity>
+      
+      <!-- Kamera und Cursor für HoloLens 2 -->
       <a-entity camera look-controls>
         <a-entity 
-          cursor="fuse: false; rayOrigin: entity" <!-- Anpassung für HoloLens 2 -->
+          cursor="fuse: false; rayOrigin: entity"
           raycaster="objects: .clickable"
-          geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03"
+          position="0 0 -1"
+          geometry="primitive: circle; radius: 0.02"
           material="color: black; shader: flat">
         </a-entity>
       </a-entity>
@@ -65,6 +69,7 @@
           
           this.onboardingDataList = [];
           this.currentCardIndex = 0;
+          this.isVRMode = false; // Initialisierungswert für VR-Modus
           
           // Event Listener für Buttons
           this.buttonNext.addEventListener('click', () => this.onNextClicked());
@@ -77,6 +82,10 @@
           } else {
             console.error("JSON URL ist nicht gesetzt.");
           }
+          
+          // Event Listener für VR-Modus
+          this.el.sceneEl.addEventListener('enter-vr', this.onEnterVR.bind(this));
+          this.el.sceneEl.addEventListener('exit-vr', this.onExitVR.bind(this));
         },
         fetchOnboardingData: function(url) {
           fetch(url)
@@ -106,26 +115,22 @@
             // Card Number
             if (this.cardNumberText) {
               this.cardNumberText.setAttribute('value', `Karte ${this.currentCardIndex + 1}/${this.onboardingDataList.length}`);
-              this.cardNumberText.setAttribute('color', '#000000'); // Schwarz
             }
             
             // Title
             if (this.titleText) {
               this.titleText.setAttribute('value', currentData.Titel || '');
-              this.titleText.setAttribute('color', '#000000'); // Schwarz
             }
             
             // Description
             if (this.descriptionText) {
               this.descriptionText.setAttribute('value', currentData.Maintext || '');
-              this.descriptionText.setAttribute('color', '#000000'); // Schwarz
             }
             
             // Warning
             if (this.warningText) {
               if (currentData.Warning && currentData.Warning !== "none") {
                 this.warningText.setAttribute('value', currentData.Warning);
-                this.warningText.setAttribute('color', '#FF0000'); // Rot
                 this.warningText.setAttribute('visible', 'true');
               } else {
                 this.warningText.setAttribute('value', '');
@@ -144,9 +149,45 @@
                 this.mediaImage.setAttribute('visible', 'false');
               }
             }
+            
+            // Aktualisiere die Farben basierend auf dem aktuellen Modus
+            this.updateTextColors();
           } else {
             console.warn("OnboardingDataList ist leer. UI kann nicht aktualisiert werden.");
           }
+        },
+        updateTextColors: function() {
+          const textColor = this.isVRMode ? '#FFFFFF' : '#000000';
+          
+          // Setze Farben für alle Text-Elemente außer Warnungen
+          if (this.cardNumberText) {
+            this.cardNumberText.setAttribute('color', textColor);
+          }
+          if (this.titleText) {
+            this.titleText.setAttribute('color', textColor);
+          }
+          if (this.descriptionText) {
+            this.descriptionText.setAttribute('color', textColor);
+          }
+          // Buttons
+          const buttonTexts = [
+            this.buttonPrev.querySelector('a-text'),
+            this.buttonNext.querySelector('a-text'),
+            this.buttonClose.querySelector('a-text')
+          ];
+          buttonTexts.forEach(buttonText => {
+            if (buttonText) {
+              buttonText.setAttribute('color', textColor);
+            }
+          });
+        },
+        onEnterVR: function() {
+          this.isVRMode = true;
+          this.updateTextColors();
+        },
+        onExitVR: function() {
+          this.isVRMode = false;
+          this.updateTextColors();
         },
         onNextClicked: function() {
           if (this.onboardingDataList && this.currentCardIndex < this.onboardingDataList.length - 1) {
@@ -173,6 +214,9 @@
           if (this.buttonNext) this.buttonNext.removeEventListener('click', this.onNextClicked);
           if (this.buttonPrev) this.buttonPrev.removeEventListener('click', this.onPrevClicked);
           if (this.buttonClose) this.buttonClose.removeEventListener('click', this.onCloseClicked);
+          // VR-Event Listener entfernen
+          this.el.sceneEl.removeEventListener('enter-vr', this.onEnterVR);
+          this.el.sceneEl.removeEventListener('exit-vr', this.onExitVR);
         }
       });
     </script>
