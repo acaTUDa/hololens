@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Onboarding mit A-Frame</title>
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <!-- Optional: Komponenten für Interaktionen -->
+    <script src="https://unpkg.com/aframe-event-set-component@5.0.0/dist/aframe-event-set-component.min.js"></script>
+    <script src="https://unpkg.com/aframe-layout-component@5.0.0/dist/aframe-layout-component.min.js"></script>
+  </head>
+  <body>
+    <a-scene>
+      <!-- Onboarding Manager Komponente -->
+      <a-entity id="onboarding" onboarding-manager="jsonUrl: https://raw.githubusercontent.com/acaTUDa/Morpheus/refs/heads/main/data/dd3R.json; baseImageUrl: https://raw.githubusercontent.com/acaTUDa/Morpheus/refs/heads/main/media/"></a-entity>
+      
+      <!-- UI Elemente -->
+      <a-entity id="ui" position="0 1.6 -3">
+        <a-text id="cardNumber" position="-1.891 1.86595 0" color="#000000" value=""></a-text>
+        <a-text id="title" position="-1.859 1.55385 0" color="#000000" value="" width="4"></a-text>
+        <a-text id="description" position="-1.85911 1 0" color="#000000" value="" width="4"></a-text>
+        <a-text id="warning" position="-1.83314 0.37068 0" color="#FF0000" value="" visible="false" width="4"></a-text>
+        <a-image id="mediaImage" position="3.30342 0.86375 0" width="2" height="2" visible="false"></a-image>
+        
+        <!-- Buttons -->
+        <a-plane id="buttonPrev" position="-1.5 -0.5 0" width="0.5" height="0.2" color="#555" class="clickable">
+          <a-text value="Zurück" align="center" position="0 0 0.1" color="#000000"></a-text>
+        </a-plane>
+        <a-plane id="buttonNext" position="0  -0.5 0" width="0.5" height="0.2" color="#555" class="clickable">
+          <a-text value="Weiter" align="center" position="0 0 0.1" color="#000000"></a-text>
+        </a-plane>
+        <a-plane id="buttonClose" position="1.5 -0.5 0" width="0.5" height="0.2" color="#555" class="clickable">
+          <a-text value="Schließen" align="center" position="0 0 0.1" color="#000000"></a-text>
+        </a-plane>
+      </a-entity>
+      
+      <!-- Kamera und Cursor für Interaktionen -->
+      <a-entity camera look-controls wasd-controls="acceleration:100" position="0 1.75 0">
+        <a-entity 
+          cursor="fuse: false; rayOrigin: mouse"
+          raycaster="objects: .clickable"
+          position="0 0 -1"
+          geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03"
+          material="color: black; shader: flat">
+        </a-entity>
+      </a-entity>
+    </a-scene>
+
+    <!-- Onboarding Manager Script -->
+    <script>
+      AFRAME.registerComponent('onboarding-manager', {
+        schema: {
+          jsonUrl: {type: 'string'},
+          baseImageUrl: {type: 'string'}
+        },
+        init: function () {
+          const data = this.data;
+          const ui = document.getElementById('ui');
+          this.cardNumberText = document.getElementById('cardNumber');
+          this.titleText = document.getElementById('title');
+          this.descriptionText = document.getElementById('description');
+          this.warningText = document.getElementById('warning');
+          this.mediaImage = document.getElementById('mediaImage');
+          this.buttonNext = document.getElementById('buttonNext');
+          this.buttonPrev = document.getElementById('buttonPrev');
+          this.buttonClose = document.getElementById('buttonClose');
+          
+          this.onboardingDataList = [];
+          this.currentCardIndex = 0;
+          
+          // Event Listener für Buttons
+          this.buttonNext.addEventListener('click', () => this.onNextClicked());
+          this.buttonPrev.addEventListener('click', () => this.onPrevClicked());
+          this.buttonClose.addEventListener('click', () => this.onCloseClicked());
+          
+          // Daten abrufen
+          if (data.jsonUrl) {
+            this.fetchOnboardingData(data.jsonUrl);
+          } else {
+            console.error("JSON URL ist nicht gesetzt.");
+          }
+        },
+        fetchOnboardingData: function(url) {
+          fetch(url)
+            .then(response => {
+              if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+              }
+              return response.json();
+            })
+            .then(json => {
+              this.onboardingDataList = json;
+              if (this.onboardingDataList.length > 0) {
+                this.currentCardIndex = 0;
+                this.updateUI();
+              } else {
+                console.warn("Keine Onboarding-Daten gefunden.");
+              }
+            })
+            .catch(error => {
+              console.error(`Fehler beim Laden der JSON-Daten: ${error}`);
+            });
+        },
+        updateUI: function() {
+          if (this.onboardingDataList.length > 0) {
+            const currentData = this.onboardingDataList[this.currentCardIndex];
+            
+            // Card Number
+            if (this.cardNumberText) {
+              this.cardNumberText.setAttribute('value', `Karte ${this.currentCardIndex + 1}/${this.onboardingDataList.length}`);
+              this.cardNumberText.setAttribute('color', '#000000'); // Schwarz
+            }
+            
+            // Title
+            if (this.titleText) {
+              this.titleText.setAttribute('value', currentData.Titel || '');
+              this.titleText.setAttribute('color', '#000000'); // Schwarz
+            }
+            
+            // Description
+            if (this.descriptionText) {
+              this.descriptionText.setAttribute('value', currentData.Maintext || '');
+              this.descriptionText.setAttribute('color', '#000000'); // Schwarz
+            }
+            
+            // Warning
+            if (this.warningText) {
+              if (currentData.Warning && currentData.Warning !== "none") {
+                this.warningText.setAttribute('value', currentData.Warning);
+                this.warningText.setAttribute('color', '#FF0000'); // Rot
+                this.warningText.setAttribute('visible', 'true');
+              } else {
+                this.warningText.setAttribute('value', '');
+                this.warningText.setAttribute('visible', 'false');
+              }
+            }
+            
+            // Media Image
+            if (this.mediaImage) {
+              const mediaFileName = currentData.Media;
+              if (mediaFileName && mediaFileName !== "none") {
+                const imageUrl = `${this.data.baseImageUrl}/${mediaFileName}`;
+                this.mediaImage.setAttribute('src', imageUrl);
+                this.mediaImage.setAttribute('visible', 'true');
+              } else {
+                this.mediaImage.setAttribute('visible', 'false');
+              }
+            }
+          } else {
+            console.warn("OnboardingDataList ist leer. UI kann nicht aktualisiert werden.");
+          }
+        },
+        onNextClicked: function() {
+          if (this.onboardingDataList && this.currentCardIndex < this.onboardingDataList.length - 1) {
+            this.currentCardIndex++;
+            this.updateUI();
+          } else {
+            console.log("Keine weiteren Karten verfügbar.");
+          }
+        },
+        onPrevClicked: function() {
+          if (this.onboardingDataList && this.currentCardIndex > 0) {
+            this.currentCardIndex--;
+            this.updateUI();
+          } else {
+            console.log("Dies ist die erste Karte.");
+          }
+        },
+        onCloseClicked: function() {
+          const onboardingEntity = document.getElementById('onboarding');
+          onboardingEntity.setAttribute('visible', 'false');
+        },
+        remove: function () {
+          // Event Listener entfernen, falls nötig
+          if (this.buttonNext) this.buttonNext.removeEventListener('click', this.onNextClicked);
+          if (this.buttonPrev) this.buttonPrev.removeEventListener('click', this.onPrevClicked);
+          if (this.buttonClose) this.buttonClose.removeEventListener('click', this.onCloseClicked);
+        }
+      });
+    </script>
+  </body>
+</html>
