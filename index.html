@@ -2,14 +2,11 @@
 <html>
   <head>
     <meta charset="UTF-8">
-    <title>Onboarding mit A-Frame und HoloLens 2</title>
+    <title>Onboarding mit A-Frame für HoloLens 2</title>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <!-- Optional: Komponenten für erweiterte Interaktionen -->
     <script src="https://unpkg.com/aframe-event-set-component@5.0.0/dist/aframe-event-set-component.min.js"></script>
     <script src="https://unpkg.com/aframe-layout-component@5.0.0/dist/aframe-layout-component.min.js"></script>
-    <style>
-      body { margin: 0; }
-    </style>
   </head>
   <body>
     <a-scene>
@@ -36,12 +33,11 @@
         </a-plane>
       </a-entity>
       
-      <!-- Kamera und Cursor für Interaktionen (unterstützt HoloLens 2) -->
+      <!-- Kamera und Cursor für HoloLens 2 Interaktionen -->
       <a-entity camera look-controls>
         <a-entity 
-          cursor="fuse: false; rayOrigin: mouse"
+          cursor="fuse: false; rayOrigin: entity" <!-- Anpassung für HoloLens 2 -->
           raycaster="objects: .clickable"
-          position="0 0 -1"
           geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03"
           material="color: black; shader: flat">
         </a-entity>
@@ -69,7 +65,6 @@
           
           this.onboardingDataList = [];
           this.currentCardIndex = 0;
-          this.isVRMode = false;
           
           // Event Listener für Buttons
           this.buttonNext.addEventListener('click', () => this.onNextClicked());
@@ -82,17 +77,6 @@
           } else {
             console.error("JSON URL ist nicht gesetzt.");
           }
-
-          // Event Listener für VR-Modus Wechsel
-          this.el.sceneEl.addEventListener('enter-vr', () => {
-            this.isVRMode = true;
-            this.updateTextColors();
-          });
-
-          this.el.sceneEl.addEventListener('exit-vr', () => {
-            this.isVRMode = false;
-            this.updateTextColors();
-          });
         },
         fetchOnboardingData: function(url) {
           fetch(url)
@@ -122,26 +106,26 @@
             // Card Number
             if (this.cardNumberText) {
               this.cardNumberText.setAttribute('value', `Karte ${this.currentCardIndex + 1}/${this.onboardingDataList.length}`);
-              this.cardNumberText.setAttribute('color', this.isVRMode ? '#FFFFFF' : '#000000'); // Dynamische Farbe
+              this.cardNumberText.setAttribute('color', '#000000'); // Schwarz
             }
             
             // Title
             if (this.titleText) {
               this.titleText.setAttribute('value', currentData.Titel || '');
-              this.titleText.setAttribute('color', this.isVRMode ? '#FFFFFF' : '#000000'); // Dynamische Farbe
+              this.titleText.setAttribute('color', '#000000'); // Schwarz
             }
             
             // Description
             if (this.descriptionText) {
               this.descriptionText.setAttribute('value', currentData.Maintext || '');
-              this.descriptionText.setAttribute('color', this.isVRMode ? '#FFFFFF' : '#000000'); // Dynamische Farbe
+              this.descriptionText.setAttribute('color', '#000000'); // Schwarz
             }
             
             // Warning
             if (this.warningText) {
               if (currentData.Warning && currentData.Warning !== "none") {
                 this.warningText.setAttribute('value', currentData.Warning);
-                this.warningText.setAttribute('color', '#FF0000'); // Rot bleibt immer Rot
+                this.warningText.setAttribute('color', '#FF0000'); // Rot
                 this.warningText.setAttribute('visible', 'true');
               } else {
                 this.warningText.setAttribute('value', '');
@@ -163,20 +147,6 @@
           } else {
             console.warn("OnboardingDataList ist leer. UI kann nicht aktualisiert werden.");
           }
-        },
-        updateTextColors: function() {
-          const color = this.isVRMode ? '#FFFFFF' : '#000000';
-          
-          if (this.cardNumberText) {
-            this.cardNumberText.setAttribute('color', color);
-          }
-          if (this.titleText) {
-            this.titleText.setAttribute('color', color);
-          }
-          if (this.descriptionText) {
-            this.descriptionText.setAttribute('color', color);
-          }
-          // Warning bleibt Rot, keine Änderung
         },
         onNextClicked: function() {
           if (this.onboardingDataList && this.currentCardIndex < this.onboardingDataList.length - 1) {
