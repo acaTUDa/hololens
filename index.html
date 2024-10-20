@@ -7,11 +7,13 @@
     <!-- Zusätzliche Komponenten für Hand-Tracking -->
     <script src="https://unpkg.com/aframe-hands@3.0.1/dist/aframe-hands.min.js"></script>
     <script src="https://unpkg.com/aframe-super-hands-component@4.0.0/dist/aframe-super-hands-component.min.js"></script>
+    <!-- Line Component für den Laser-Pointer -->
+    <script src="https://unpkg.com/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
   </head>
   <body>
     <a-scene>
       <!-- Onboarding Manager Komponente -->
-      <a-entity id="onboarding" onboarding-manager="jsonUrl: https://raw.githubusercontent.com/acaTUDa/Morpheus/refs/heads/main/data/dd3R.json; baseImageUrl: https://raw.githubusercontent.com/acaTUDa/Morpheus/refs/heads/main/media"></a-entity>
+      <a-entity id="onboarding" onboarding-manager="jsonUrl: https://example.com/onboarding.json; baseImageUrl: https://github.com/yourrepo/images"></a-entity>
       
       <!-- UI Elemente mit angepassten Positionen und Farben -->
       <a-entity id="ui" position="0 1.6 -3">
@@ -33,19 +35,14 @@
         </a-plane>
       </a-entity>
       
-      <!-- Hand-Tracking Komponenten für HoloLens 2 -->
-      <a-entity hands></a-entity>
+      <!-- Hand-Tracking für die rechte Hand mit Laser-Pointer -->
+      <a-entity id="rightHand" hand-tracking-controls="hand: right" 
+                super-hands
+                raycaster="objects: .clickable; far: 10; showLine: true" 
+                line="color: red; opacity: 0.75"></a-entity>
       
-      <!-- Kamera und Cursor für HoloLens 2 -->
-      <a-entity camera look-controls>
-        <a-entity 
-          cursor="fuse: false; rayOrigin: entity"
-          raycaster="objects: .clickable"
-          position="0 0 -1"
-          geometry="primitive: circle; radius: 0.02"
-          material="color: black; shader: flat">
-        </a-entity>
-      </a-entity>
+      <!-- Kamera -->
+      <a-entity camera look-controls></a-entity>
     </a-scene>
 
     <!-- Onboarding Manager Script -->
@@ -57,7 +54,6 @@
         },
         init: function () {
           const data = this.data;
-          const ui = document.getElementById('ui');
           this.cardNumberText = document.getElementById('cardNumber');
           this.titleText = document.getElementById('title');
           this.descriptionText = document.getElementById('description');
@@ -69,12 +65,18 @@
           
           this.onboardingDataList = [];
           this.currentCardIndex = 0;
-          this.isVRMode = false; // Initialisierungswert für VR-Modus
+          this.isVRMode = false;
+          this.hoverHandlers = [];
           
           // Event Listener für Buttons
           this.buttonNext.addEventListener('click', () => this.onNextClicked());
           this.buttonPrev.addEventListener('click', () => this.onPrevClicked());
           this.buttonClose.addEventListener('click', () => this.onCloseClicked());
+          
+          // Visuelles Feedback für Buttons
+          this.addHoverEffect(this.buttonNext);
+          this.addHoverEffect(this.buttonPrev);
+          this.addHoverEffect(this.buttonClose);
           
           // Daten abrufen
           if (data.jsonUrl) {
@@ -170,7 +172,7 @@
             this.descriptionText.setAttribute('color', textColor);
           }
           
-          // Buttons
+          // Buttons Textfarbe
           const buttonTexts = [
             this.buttonPrev.querySelector('a-text'),
             this.buttonNext.querySelector('a-text'),
@@ -180,6 +182,12 @@
             if (buttonText) {
               buttonText.setAttribute('color', textColor);
             }
+          });
+          
+          // Buttons Hintergrundfarbe
+          const buttonColor = this.isVRMode ? '#AAA' : '#555';
+          [this.buttonPrev, this.buttonNext, this.buttonClose].forEach(button => {
+            button.setAttribute('color', buttonColor);
           });
         },
         onEnterVR: function() {
@@ -210,11 +218,39 @@
           const onboardingEntity = document.getElementById('onboarding');
           onboardingEntity.setAttribute('visible', 'false');
         },
+        addHoverEffect: function(button) {
+          const hoverStart = this.onButtonHoverStart.bind(this, button);
+          const hoverEnd = this.onButtonHoverEnd.bind(this, button);
+          button.addEventListener('hover-start', hoverStart);
+          button.addEventListener('hover-end', hoverEnd);
+          
+          // Speichere die Referenzen, um sie später entfernen zu können
+          this.hoverHandlers.push({button: button, hoverStart: hoverStart, hoverEnd: hoverEnd});
+        },
+        onButtonHoverStart: function(button) {
+          button.setAttribute('color', '#777');
+        },
+        onButtonHoverEnd: function(button) {
+          button.setAttribute('color', this.isVRMode ? '#AAA' : '#555');
+        },
         remove: function () {
           // Event Listener entfernen, falls nötig
-          if (this.buttonNext) this.buttonNext.removeEventListener('click', this.onNextClicked);
-          if (this.buttonPrev) this.buttonPrev.removeEventListener('click', this.onPrevClicked);
-          if (this.buttonClose) this.buttonClose.removeEventListener('click', this.onCloseClicked);
+          if (this.buttonNext) {
+            this.buttonNext.removeEventListener('click', this.onNextClicked);
+          }
+          if (this.buttonPrev) {
+            this.buttonPrev.removeEventListener('click', this.onPrevClicked);
+          }
+          if (this.buttonClose) {
+            this.buttonClose.removeEventListener('click', this.onCloseClicked);
+          }
+          // Entferne Hover-Effekte
+          if (this.hoverHandlers) {
+            this.hoverHandlers.forEach(handler => {
+              handler.button.removeEventListener('hover-start', handler.hoverStart);
+              handler.button.removeEventListener('hover-end', handler.hoverEnd);
+            });
+          }
           // VR-Event Listener entfernen
           this.el.sceneEl.removeEventListener('enter-vr', this.onEnterVR);
           this.el.sceneEl.removeEventListener('exit-vr', this.onExitVR);
