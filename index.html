@@ -3,13 +3,13 @@
   <head>
     <meta charset="UTF-8">
     <title>Onboarding mit A-Frame für HoloLens 2</title>
-    <!-- A-Frame Bibliothek -->
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-    <!-- Hand-Tracking Komponenten -->
+    <!-- Zusätzliche Komponenten für Hand-Tracking -->
     <script src="https://unpkg.com/aframe-hands@3.0.1/dist/aframe-hands.min.js"></script>
     <script src="https://unpkg.com/aframe-super-hands-component@4.0.0/dist/aframe-super-hands-component.min.js"></script>
-    <!-- A-Frame Extras für erweiterte Geometrien -->
-    <script src="https://unpkg.com/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
+    <!-- Optional: Für bessere Interaktionen -->
+    <script src="https://unpkg.com/aframe-event-set-component@5.0.0/dist/aframe-event-set-component.min.js"></script>
+    <script src="https://unpkg.com/aframe-layout-component@5.0.0/dist/aframe-layout-component.min.js"></script>
   </head>
   <body>
     <a-scene>
@@ -39,23 +39,27 @@
       <!-- Hand-Tracking Komponenten für HoloLens 2 -->
       <a-entity hands></a-entity>
       
-      <!-- Rechte Hand mit Raycaster und Laseranzeige -->
-      <a-entity id="rightHand" hand-controls="right: true" super-hands>
-        <!-- Laseranzeige -->
-        <a-entity 
-          id="rightLaser"
-          line="start: 0 0 0; end: 0 0 -1; color: #00FF00; opacity: 0.8"
-          position="0 0 0">
-        </a-entity>
-        <!-- Raycaster -->
-        <a-entity 
-          cursor="fuse: false; rayOrigin: entity"
-          raycaster="objects: .clickable; far: 10"
-          position="0 0 0">
-        </a-entity>
+      <!-- Laser Pointer an der rechten Hand -->
+      <a-entity id="rightHandLaser" laser-controls="hand: right">
+        <!-- Sichtbarer Laser-Strahl -->
+        <a-cylinder 
+          position="0 0 0.5" 
+          rotation="0 0 0" 
+          radius="0.005" 
+          height="10" 
+          color="#FF0000" 
+          opacity="0.7" 
+          visible="false">
+        </a-cylinder>
+        <!-- Raycaster für Interaktionen -->
+        <a-raycaster 
+          objects=".clickable" 
+          near="0.1" 
+          far="10">
+        </a-raycaster>
       </a-entity>
       
-      <!-- Kamera (ohne Cursor) -->
+      <!-- Kamera ohne Standard-Cursor -->
       <a-entity camera look-controls></a-entity>
     </a-scene>
 
@@ -68,6 +72,7 @@
         },
         init: function () {
           const data = this.data;
+          const ui = document.getElementById('ui');
           this.cardNumberText = document.getElementById('cardNumber');
           this.titleText = document.getElementById('title');
           this.descriptionText = document.getElementById('description');
