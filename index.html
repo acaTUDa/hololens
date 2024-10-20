@@ -7,14 +7,11 @@
     <!-- Zusätzliche Komponenten für Hand-Tracking -->
     <script src="https://unpkg.com/aframe-hands@3.0.1/dist/aframe-hands.min.js"></script>
     <script src="https://unpkg.com/aframe-super-hands-component@4.0.0/dist/aframe-super-hands-component.min.js"></script>
-    <!-- Optional: Für bessere Interaktionen -->
-    <script src="https://unpkg.com/aframe-event-set-component@5.0.0/dist/aframe-event-set-component.min.js"></script>
-    <script src="https://unpkg.com/aframe-layout-component@5.0.0/dist/aframe-layout-component.min.js"></script>
   </head>
   <body>
     <a-scene>
       <!-- Onboarding Manager Komponente -->
-      <a-entity id="onboarding" onboarding-manager="jsonUrl: https://raw.githubusercontent.com/acaTUDa/Morpheus/refs/heads/main/data/dd3R.json; baseImageUrl: https://raw.githubusercontent.com/acaTUDa/Morpheus/refs/heads/main/media"></a-entity>
+      <a-entity id="onboarding" onboarding-manager="jsonUrl: https://example.com/onboarding.json; baseImageUrl: https://github.com/yourrepo/images"></a-entity>
       
       <!-- UI Elemente mit angepassten Positionen und Farben -->
       <a-entity id="ui" position="0 1.6 -3">
@@ -39,28 +36,16 @@
       <!-- Hand-Tracking Komponenten für HoloLens 2 -->
       <a-entity hands></a-entity>
       
-      <!-- Laser Pointer an der rechten Hand -->
-      <a-entity id="rightHandLaser" laser-controls="hand: right">
-        <!-- Sichtbarer Laser-Strahl -->
-        <a-cylinder 
-          position="0 0 0.5" 
-          rotation="0 0 0" 
-          radius="0.005" 
-          height="10" 
-          color="#FF0000" 
-          opacity="0.7" 
-          visible="false">
-        </a-cylinder>
-        <!-- Raycaster für Interaktionen -->
-        <a-raycaster 
-          objects=".clickable" 
-          near="0.1" 
-          far="10">
-        </a-raycaster>
+      <!-- Kamera und Cursor für HoloLens 2 -->
+      <a-entity camera look-controls>
+        <a-entity 
+          cursor="fuse: false; rayOrigin: entity"
+          raycaster="objects: .clickable"
+          position="0 0 -1"
+          geometry="primitive: circle; radius: 0.02"
+          material="color: black; shader: flat">
+        </a-entity>
       </a-entity>
-      
-      <!-- Kamera ohne Standard-Cursor -->
-      <a-entity camera look-controls></a-entity>
     </a-scene>
 
     <!-- Onboarding Manager Script -->
