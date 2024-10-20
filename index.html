@@ -7,45 +7,42 @@
     <!-- Zusätzliche Komponenten für Hand-Tracking -->
     <script src="https://unpkg.com/aframe-hands@3.0.1/dist/aframe-hands.min.js"></script>
     <script src="https://unpkg.com/aframe-super-hands-component@4.0.0/dist/aframe-super-hands-component.min.js"></script>
+    <!-- Line Component für den Laser-Pointer -->
+    <script src="https://unpkg.com/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
   </head>
   <body>
     <a-scene>
-      <!-- Onboarding Manager Komponente -->
-      <a-entity id="onboarding" onboarding-manager="jsonUrl: https://example.com/onboarding.json; baseImageUrl: https://github.com/yourrepo/images"></a-entity>
+      <!-- Onboarding Manager Komponente mit aktualisierten URLs -->
+      <a-entity id="onboarding" onboarding-manager="jsonUrl: https://raw.githubusercontent.com/acaTUDa/Morpheus/refs/heads/main/data/dd3R.json; baseImageUrl: https://raw.githubusercontent.com/acaTUDa/Morpheus/refs/heads/main/media"></a-entity>
       
       <!-- UI Elemente mit angepassten Positionen und Farben -->
       <a-entity id="ui" position="0 1.6 -3">
-        <a-text id="cardNumber" position="-2 1.75017 -0.5" color="#000000" value=""></a-text>
-        <a-text id="title" position="-2 1.4 -0.5" color="#000000" value="" width="4"></a-text>
-        <a-text id="description" position="-2 0.8708 -0.5" color="#000000" value="" width="4"></a-text>
+        <a-text id="cardNumber" position="-2 1.75017 -0.5" color="#FFFFFF" value=""></a-text>
+        <a-text id="title" position="-2 1.4 -0.5" color="#FFFFFF" value="" width="4"></a-text>
+        <a-text id="description" position="-2 0.8708 -0.5" color="#FFFFFF" value="" width="4"></a-text>
         <a-text id="warning" position="-2 0.09217 -0.5" color="#FF0000" value="" visible="false" width="4"></a-text>
         <a-image id="mediaImage" position="3.5253 1.00517 -0.5" width="2" height="2" visible="false"></a-image>
         
         <!-- Buttons mit angepassten Positionen und Farben -->
-        <a-plane id="buttonPrev" position="-1.6 -0.6 -0.5" width="0.5" height="0.2" color="#555" class="clickable button">
-          <a-text value="Zurück" align="center" position="0 0 0.1" color="#000000"></a-text>
+        <a-plane id="buttonPrev" position="-1.6 -0.6 -0.5" width="0.5" height="0.2" color="#AAA" class="clickable button">
+          <a-text value="Zurück" align="center" position="0 0 0.1" color="#FFFFFF"></a-text>
         </a-plane>
-        <a-plane id="buttonNext" position="0 -0.6 -0.5" width="0.5" height="0.2" color="#555" class="clickable button">
-          <a-text value="Weiter" align="center" position="0 0 0.1" color="#000000"></a-text>
+        <a-plane id="buttonNext" position="0 -0.6 -0.5" width="0.5" height="0.2" color="#AAA" class="clickable button">
+          <a-text value="Weiter" align="center" position="0 0 0.1" color="#FFFFFF"></a-text>
         </a-plane>
-        <a-plane id="buttonClose" position="1.6 -0.6 -0.5" width="0.5" height="0.2" color="#555" class="clickable button">
-          <a-text value="Schließen" align="center" position="0 0 0.1" color="#000000"></a-text>
+        <a-plane id="buttonClose" position="1.6 -0.6 -0.5" width="0.5" height="0.2" color="#AAA" class="clickable button">
+          <a-text value="Schließen" align="center" position="0 0 0.1" color="#FFFFFF"></a-text>
         </a-plane>
       </a-entity>
       
-      <!-- Hand-Tracking Komponenten für HoloLens 2 -->
-      <a-entity hands></a-entity>
+      <!-- Hand-Tracking für die rechte Hand mit Laser-Pointer -->
+      <a-entity id="rightHand" hand-tracking-controls="hand: right" 
+                super-hands
+                raycaster="objects: .clickable; far: 10; showLine: true" 
+                line="color: red; opacity: 0.75"></a-entity>
       
-      <!-- Kamera und Cursor für HoloLens 2 -->
-      <a-entity camera look-controls>
-        <a-entity 
-          cursor="fuse: false; rayOrigin: entity"
-          raycaster="objects: .clickable"
-          position="0 0 -1"
-          geometry="primitive: circle; radius: 0.02"
-          material="color: black; shader: flat">
-        </a-entity>
-      </a-entity>
+      <!-- Kamera -->
+      <a-entity camera look-controls></a-entity>
     </a-scene>
 
     <!-- Onboarding Manager Script -->
@@ -57,7 +54,6 @@
         },
         init: function () {
           const data = this.data;
-          const ui = document.getElementById('ui');
           this.cardNumberText = document.getElementById('cardNumber');
           this.titleText = document.getElementById('title');
           this.descriptionText = document.getElementById('description');
@@ -69,12 +65,17 @@
           
           this.onboardingDataList = [];
           this.currentCardIndex = 0;
-          this.isVRMode = false; // Initialisierungswert für VR-Modus
+          this.isHoloLens = this.detectHoloLens();
           
           // Event Listener für Buttons
           this.buttonNext.addEventListener('click', () => this.onNextClicked());
           this.buttonPrev.addEventListener('click', () => this.onPrevClicked());
           this.buttonClose.addEventListener('click', () => this.onCloseClicked());
+          
+          // Visuelles Feedback für Buttons
+          this.addHoverEffect(this.buttonNext);
+          this.addHoverEffect(this.buttonPrev);
+          this.addHoverEffect(this.buttonClose);
           
           // Daten abrufen
           if (data.jsonUrl) {
@@ -83,9 +84,12 @@
             console.error("JSON URL ist nicht gesetzt.");
           }
           
-          // Event Listener für VR-Modus
-          this.el.sceneEl.addEventListener('enter-vr', this.onEnterVR.bind(this));
-          this.el.sceneEl.addEventListener('exit-vr', this.onExitVR.bind(this));
+          // Setze die Textfarben basierend auf dem Gerät
+          this.updateTextColors();
+        },
+        detectHoloLens: function() {
+          const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+          return /Windows Holographic|Windows MR/i.test(userAgent);
         },
         fetchOnboardingData: function(url) {
           fetch(url)
@@ -149,15 +153,12 @@
                 this.mediaImage.setAttribute('visible', 'false');
               }
             }
-            
-            // Aktualisiere die Farben basierend auf dem aktuellen Modus
-            this.updateTextColors();
           } else {
             console.warn("OnboardingDataList ist leer. UI kann nicht aktualisiert werden.");
           }
         },
         updateTextColors: function() {
-          const textColor = this.isVRMode ? '#FFFFFF' : '#000000';
+          const textColor = this.isHoloLens ? '#FFFFFF' : '#000000';
           
           // Setze Farben für alle Text-Elemente außer Warnungen
           if (this.cardNumberText) {
@@ -170,7 +171,7 @@
             this.descriptionText.setAttribute('color', textColor);
           }
           
-          // Buttons
+          // Buttons Textfarbe
           const buttonTexts = [
             this.buttonPrev.querySelector('a-text'),
             this.buttonNext.querySelector('a-text'),
@@ -181,14 +182,12 @@
               buttonText.setAttribute('color', textColor);
             }
           });
-        },
-        onEnterVR: function() {
-          this.isVRMode = true;
-          this.updateTextColors();
-        },
-        onExitVR: function() {
-          this.isVRMode = false;
-          this.updateTextColors();
+          
+          // Buttons Hintergrundfarbe
+          const buttonColor = this.isHoloLens ? '#AAA' : '#555';
+          [this.buttonPrev, this.buttonNext, this.buttonClose].forEach(button => {
+            button.setAttribute('color', buttonColor);
+          });
         },
         onNextClicked: function() {
           if (this.onboardingDataList && this.currentCardIndex < this.onboardingDataList.length - 1) {
@@ -210,14 +209,43 @@
           const onboardingEntity = document.getElementById('onboarding');
           onboardingEntity.setAttribute('visible', 'false');
         },
+        addHoverEffect: function(button) {
+          const hoverStart = this.onButtonHoverStart.bind(this, button);
+          const hoverEnd = this.onButtonHoverEnd.bind(this, button);
+          button.addEventListener('hover-start', hoverStart);
+          button.addEventListener('hover-end', hoverEnd);
+          
+          // Speichere die Referenzen, um sie später entfernen zu können
+          if (!this.hoverHandlers) {
+            this.hoverHandlers = [];
+          }
+          this.hoverHandlers.push({button: button, hoverStart: hoverStart, hoverEnd: hoverEnd});
+        },
+        onButtonHoverStart: function(button) {
+          button.setAttribute('color', '#777');
+        },
+        onButtonHoverEnd: function(button) {
+          const buttonColor = this.isHoloLens ? '#AAA' : '#555';
+          button.setAttribute('color', buttonColor);
+        },
         remove: function () {
           // Event Listener entfernen, falls nötig
-          if (this.buttonNext) this.buttonNext.removeEventListener('click', this.onNextClicked);
-          if (this.buttonPrev) this.buttonPrev.removeEventListener('click', this.onPrevClicked);
-          if (this.buttonClose) this.buttonClose.removeEventListener('click', this.onCloseClicked);
-          // VR-Event Listener entfernen
-          this.el.sceneEl.removeEventListener('enter-vr', this.onEnterVR);
-          this.el.sceneEl.removeEventListener('exit-vr', this.onExitVR);
+          if (this.buttonNext) {
+            this.buttonNext.removeEventListener('click', this.onNextClicked);
+          }
+          if (this.buttonPrev) {
+            this.buttonPrev.removeEventListener('click', this.onPrevClicked);
+          }
+          if (this.buttonClose) {
+            this.buttonClose.removeEventListener('click', this.onCloseClicked);
+          }
+          // Entferne Hover-Effekte
+          if (this.hoverHandlers) {
+            this.hoverHandlers.forEach(handler => {
+              handler.button.removeEventListener('hover-start', handler.hoverStart);
+              handler.button.removeEventListener('hover-end', handler.hoverEnd);
+            });
+          }
         }
       });
     </script>
