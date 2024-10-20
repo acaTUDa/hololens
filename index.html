@@ -10,8 +10,9 @@
   </head>
   <body>
     <a-scene>
-      <!-- Onboarding Manager Komponente mit aktualisierten URLs -->
-      <a-entity id="onboarding" onboarding-manager="jsonUrl: https://raw.githubusercontent.com/acaTUDa/Morpheus/main/data/dd3R.json; baseImageUrl: https://raw.githubusercontent.com/acaTUDa/Morpheus/main/media"></a-entity>
+      <!-- Onboarding Manager Komponente -->
+ <a-entity id="onboarding" onboarding-manager="jsonUrl: https://raw.githubusercontent.com/acaTUDa/Morpheus/refs/heads/main/data/dd3R.json; baseImageUrl: https://raw.githubusercontent.com/acaTUDa/Morpheus/refs/heads/main/media"></a-entity>
+      
       
       <!-- UI Elemente mit angepassten Positionen und Farben -->
       <a-entity id="ui" position="0 1.6 -3">
@@ -42,8 +43,8 @@
           cursor="fuse: false; rayOrigin: entity"
           raycaster="objects: .clickable"
           position="0 0 -1"
-          geometry="primitive: circle; radius: 0.002"
-          material="color: red; shader: flat">
+          geometry="primitive: circle; radius: 0.02"
+          material="color: black; shader: flat">
         </a-entity>
       </a-entity>
     </a-scene>
@@ -169,7 +170,6 @@
           if (this.descriptionText) {
             this.descriptionText.setAttribute('color', textColor);
           }
-          
           // Buttons
           const buttonTexts = [
             this.buttonPrev.querySelector('a-text'),
