@@ -3,15 +3,15 @@
   <head>
     <meta charset="UTF-8">
     <title>Onboarding mit A-Frame für HoloLens 2</title>
-    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
     <!-- Zusätzliche Komponenten für Hand-Tracking -->
     <script src="https://unpkg.com/aframe-hands@3.0.1/dist/aframe-hands.min.js"></script>
     <script src="https://unpkg.com/aframe-super-hands-component@4.0.0/dist/aframe-super-hands-component.min.js"></script>
   </head>
   <body>
     <a-scene>
-      <!-- Onboarding Manager Komponente -->
-       <a-entity id="onboarding" onboarding-manager="jsonUrl: https://raw.githubusercontent.com/acaTUDa/Morpheus/refs/heads/main/data/dd3R.json; baseImageUrl: https://raw.githubusercontent.com/acaTUDa/Morpheus/refs/heads/main/media"></a-entity>
+      <!-- Onboarding Manager Komponente mit aktualisierten URLs -->
+      <a-entity id="onboarding" onboarding-manager="jsonUrl: https://raw.githubusercontent.com/acaTUDa/Morpheus/main/data/dd3R.json; baseImageUrl: https://raw.githubusercontent.com/acaTUDa/Morpheus/main/media"></a-entity>
       
       <!-- UI Elemente mit angepassten Positionen und Farben -->
       <a-entity id="ui" position="0 1.6 -3">
@@ -33,12 +33,19 @@
         </a-plane>
       </a-entity>
       
-      <!-- Hand-Tracking Komponenten für HoloLens 2 mit Raycaster -->
-      <a-entity id="rightHand" hand-controls="hand: right; handModelStyle: mesh" super-hands raycaster="objects: .clickable; showLine: true" line="color: red; opacity: 0.8">
+      <!-- Hand-Tracking Komponenten für HoloLens 2 -->
+      <a-entity hands></a-entity>
+      
+      <!-- Kamera und Cursor für HoloLens 2 -->
+      <a-entity camera look-controls>
+        <a-entity 
+          cursor="fuse: false; rayOrigin: entity"
+          raycaster="objects: .clickable"
+          position="0 0 -1"
+          geometry="primitive: circle; radius: 0.002"
+          material="color: red; shader: flat">
+        </a-entity>
       </a-entity>
-
-      <!-- Kamera für die HoloLens 2 -->
-      <a-entity camera look-controls></a-entity>
     </a-scene>
 
     <!-- Onboarding Manager Script -->
